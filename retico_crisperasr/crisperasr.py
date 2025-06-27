@@ -17,13 +17,25 @@ class CrisperASR:
         silence_dur=1,
         vad_agressiveness=3,
         silence_threshold=0.75,
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        max_new_tokens=256,
+        use_cache=True,
+        compile_model=True
 
     ):
         self.device = device
         model_id = "nyrahealth/CrisperWhisper"
         torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(model_id, torch_dtype=torch_dtype).to(device)
+        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_id, 
+            torch_dtype=torch_dtype,
+            use_cache=use_cache,
+        ).to(device)
+        if compile_model and hasattr(torch, 'compile'):
+            try:
+                self.model = torch.compile(self.model, mode="reduce-overhead")
+            except:
+                pass
         self.processor = AutoProcessor.from_pretrained(model_id)
         self.audio_buffer = []
         self.framerate = framerate
@@ -32,6 +44,16 @@ class CrisperASR:
         self.vad_state = False
         self._n_sil_frames = None
         self.silence_threshold = silence_threshold
+        self.max_new_tokens = max_new_tokens
+        self.generation_config = {
+            "max_new_tokens": max_new_tokens,
+            "num_beams": 1,  # Greedy decoding for speed
+            "do_sample": False,
+            "use_cache": use_cache,
+            "pad_token_id": self.processor.tokenizer.pad_token_id,
+            "eos_token_id": self.processor.tokenizer.eos_token_id,
+        }
+        self._temp_audio_array = None
 
     def _resample_audio(self, audio):
         if self.framerate != 16_000:
@@ -77,18 +99,23 @@ class CrisperASR:
         if not self.vad_state:
             return None, False
 
-        full_audio = b""
-        for a in self.audio_buffer:
-            full_audio += a
-        npa = np.frombuffer(full_audio, dtype=np.int16).astype(np.double) / 32768.0 # normalize between -1 and 1
-        if len(npa) < 10:
+        if len(self.audio_buffer) == 0:
             return None, False
 
-        input_features = self.processor(
-            npa, sampling_rate=16000, return_tensors="pt"
-        ).input_features.to(self.device)
-        predicted_ids = self.model.generate(input_features)
-        transcription = self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+        total_length = sum(len(a) for a in self.audio_buffer)
+        if total_length < 10:
+            return None, False
+        
+        audio_arrays = [np.frombuffer(a, dtype=np.int16) for a in self.audio_buffer]
+        full_audio_np = np.concatenate(audio_arrays)
+        npa = full_audio_np.astype(np.float32) / 32768.0  # Use float32 for better performance
+
+        with torch.no_grad():  
+            input_features = self.processor(
+                npa, sampling_rate=16000, return_tensors="pt"
+            ).input_features.to(self.device, dtype=self.model.dtype, non_blocking=True)
+            predicted_ids = self.model.generate(input_features, **self.generation_config)
+            transcription = self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
         if silence:
             self.vad_state = False
             self.audio_buffer = []
@@ -170,7 +197,7 @@ class CrisperASRModule(retico_core.AbstractModule):
 
     def prepare_run(self):
         self._asr_thread_active = True
-        threading.Thread(target=self._asr_thread).start()
+        threading.Thread(target=self._asr_thread, daemon=True).start()  # Make thread daemon for cleaner shutdown
 
     def shutdown(self):
         self._asr_thread_active = False
