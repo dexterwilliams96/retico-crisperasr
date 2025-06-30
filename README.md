@@ -1,9 +1,9 @@
 # retico-crisperasr
-Local crisper whisper ASR module for ReTiCo. Crisper whisper is better at capturing disfluencies which are often ignored by whisper, and should be more accurate in general. We do not provide support for CrisperWhisper's word-level timestamps, as they use a forked version of transformers that is incompatible with other retico modules. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
+Local ASR module for [ReTiCo](https://github.com/retico-team) that uses CrisperWhisper. CrisperWhisper is better at capturing disfluencies which are often ignored by whisper, and should be more accurate in general. We do not provide support for CrisperWhisper's word-level timestamps, as they use a forked version of transformers that is incompatible with other retico modules. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
 
 ### Requirements
 
-This module was built using `python=3.10`, Requirements can be installed with pip:
+This module was built using `python=3.10`, after cloning, requirements can be installed with pip:
 ```
 pip install -r requirements.txt
 ```
