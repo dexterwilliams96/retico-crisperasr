@@ -1,13 +1,13 @@
 # retico-crisperasr
-Local ASR module for [ReTiCo](https://github.com/retico-team) that uses CrisperWhisper. CrisperWhisper is better at capturing disfluencies which are often ignored by whisper, and should be more accurate in general. We do not provide support for CrisperWhisper's word-level timestamps, as they use a forked version of transformers that is incompatible with other retico modules. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
+ASR module for [ReTiCo](https://github.com/retico-team) that uses CrisperWhisper. CrisperWhisper is better at capturing disfluencies which are often ignored by whisper, and should be more accurate in general. We do not provide support for CrisperWhisper's word-level timestamps, as they use a forked version of transformers that is incompatible with other retico modules. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
 
 ### Requirements
 
-This module was built using `python=3.10`, after cloning, requirements can be installed with pip:
+This module was built using `python=3.9`, install with pip:
 ```
-pip install -r requirements.txt
+pip install retico-crisperasr
 ```
-You will likely want `cuBLAS` and `cuDNN` for GPU execution.
+You will likely want `cuBLAS` and `cuDNN` for GPU execution (see [here](https://pytorch.org/get-started/locally/)).
 
 ### Example
 
@@ -15,11 +15,6 @@ You do not need to specify an language, CrisperWhisper will automatically detect
 ```python
 import os
 import sys
-
-os.environ['RETICO'] = 'retico-core'
-os.environ['CRISPER'] = 'retico-crisperasr'
-sys.path.append(os.environ['RETICO'])
-sys.path.append(os.environ['CRISPER'])
 
 from retico_core import *
 from retico_core.audio import MicrophoneModule
