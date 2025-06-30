@@ -105,12 +105,12 @@ class CrisperASR:
         total_length = sum(len(a) for a in self.audio_buffer)
         if total_length < 10:
             return None, False
-        
+
         audio_arrays = [np.frombuffer(a, dtype=np.int16) for a in self.audio_buffer]
         full_audio_np = np.concatenate(audio_arrays)
-        npa = full_audio_np.astype(np.float32) / 32768.0  # Use float32 for better performance
+        npa = full_audio_np.astype(np.float32) / 32768.0
 
-        with torch.no_grad():  
+        with torch.no_grad():
             input_features = self.processor(
                 npa, sampling_rate=16000, return_tensors="pt"
             ).input_features.to(self.device, dtype=self.model.dtype, non_blocking=True)

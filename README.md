@@ -1,5 +1,5 @@
 # retico-crisperasr
-Local crisper whisper ASR module for ReTiCo. Crisper whisper provides support for word-level time stamps and is better at capturing disfluencies which are often ignored by whisper. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
+Local crisper whisper ASR module for ReTiCo. Crisper whisper is better at capturing disfluencies which are often ignored by whisper, and should be more accurate in general. We do not provide support for CrisperWhisper's word-level timestamps, as they use a forked version of transformers that is incompatible with other retico modules. See citation for more details. CrisperWhisper is a relatively large model, and performance might be poor on weaker systems. Consider using `retico-whisperasr` on a weaker setup.
 
 ### Requirements
 
@@ -10,6 +10,8 @@ pip install -r requirements.txt
 You will likely want `cuBLAS` and `cuDNN` for GPU execution.
 
 ### Example
+
+You do not need to specify an language, CrisperWhisper will automatically detect the language. The model was trained only on German and English audio.
 ```python
 import os
 import sys
