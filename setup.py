@@ -31,7 +31,7 @@ config = {
     "url": "https://github.com/dexterwilliams96/retico-crisperasr",
     "download_url": "https://github.com/dexterwilliams96/retico-crisperasr",
     "version": __version__,
-    "python_requires": ">=3.9, <4",
+    "python_requires": ">=3.10, <4",
     "keywords": "retico, framework, incremental, dialogue, dialog",
     "install_requires": [
         "retico-core>=0.2.10,<0.3.0",

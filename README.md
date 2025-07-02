@@ -3,15 +3,16 @@ ASR module for [ReTiCo](https://github.com/retico-team) that uses CrisperWhisper
 
 ### Requirements
 
-This module was built using `python=3.9`, install with pip:
+This module was built using `python=3.10`, install with pip:
 ```
-pip install retico-crisperasr
+pip install .
 ```
 You will likely want `cuBLAS` and `cuDNN` for GPU execution (see [here](https://pytorch.org/get-started/locally/)).
 
 ### Example
 
 You do not need to specify an language, CrisperWhisper will automatically detect the language. The model was trained only on German and English audio.
+
 ```python
 import os
 import sys
@@ -38,7 +39,8 @@ input()
 debug.stop()
 asr.stop()
 mic.stop()
-```
+``````
+
 ### Citation
 
 [CrisperWhisper repo](https://github.com/nyrahealth/CrisperWhisper/tree/main)

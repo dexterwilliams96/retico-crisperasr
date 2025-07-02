@@ -10,6 +10,7 @@ from retico_core.audio import AudioIU
 from retico_core.text import SpeechRecognitionIU
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 
+
 class CrisperASR:
     def __init__(
         self,
@@ -27,7 +28,7 @@ class CrisperASR:
         model_id = "nyrahealth/CrisperWhisper"
         torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            model_id, 
+            model_id,
             torch_dtype=torch_dtype,
             use_cache=use_cache,
         ).to(device)
@@ -65,16 +66,17 @@ class CrisperASR:
             return s._data
         return audio
 
-    def get_n_sil_frames(self):
+    def _get_n_sil_frames(self):
         if not self._n_sil_frames:
             if len(self.audio_buffer) == 0:
                 return None
             frame_length = len(self.audio_buffer[0]) / 2
-            self._n_sil_frames = int(self.silence_dur / (frame_length / 16_000))
+            self._n_sil_frames = int(
+                self.silence_dur / (frame_length / 16_000))
         return self._n_sil_frames
 
-    def recognize_silence(self):
-        n_sil_frames = self.get_n_sil_frames()
+    def _recognize_silence(self):
+        n_sil_frames = self._get_n_sil_frames()
         if not n_sil_frames or len(self.audio_buffer) < n_sil_frames:
             return True
         silence_counter = 0
@@ -90,11 +92,11 @@ class CrisperASR:
         self.audio_buffer.append(audio)
 
     def recognize(self):
-        silence = self.recognize_silence()
+        silence = self._recognize_silence()
         transcription = None
         if not self.vad_state and not silence:
             self.vad_state = True
-            self.audio_buffer = self.audio_buffer[-self.get_n_sil_frames() :]
+            self.audio_buffer = self.audio_buffer[-self._get_n_sil_frames():]
 
         if not self.vad_state:
             return None, False
@@ -106,7 +108,8 @@ class CrisperASR:
         if total_length < 10:
             return None, False
 
-        audio_arrays = [np.frombuffer(a, dtype=np.int16) for a in self.audio_buffer]
+        audio_arrays = [np.frombuffer(a, dtype=np.int16)
+                        for a in self.audio_buffer]
         full_audio_np = np.concatenate(audio_arrays)
         npa = full_audio_np.astype(np.float32) / 32768.0
 
@@ -114,8 +117,10 @@ class CrisperASR:
             input_features = self.processor(
                 npa, sampling_rate=16000, return_tensors="pt"
             ).input_features.to(self.device, dtype=self.model.dtype, non_blocking=True)
-            predicted_ids = self.model.generate(input_features, **self.generation_config)
-            transcription = self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+            predicted_ids = self.model.generate(
+                input_features, **self.generation_config)
+            transcription = self.processor.batch_decode(
+                predicted_ids, skip_special_tokens=True)[0]
         if silence:
             self.vad_state = False
             self.audio_buffer = []
@@ -124,6 +129,7 @@ class CrisperASR:
     def reset(self):
         self.vad_state = True
         self.audio_buffer = []
+
 
 class CrisperASRModule(retico_core.AbstractModule):
     @staticmethod
@@ -174,7 +180,8 @@ class CrisperASRModule(retico_core.AbstractModule):
             if prediction is None:
                 continue
             end_of_utterance = not vad
-            um, new_tokens = retico_core.text.get_text_increment(self, prediction)
+            um, new_tokens = retico_core.text.get_text_increment(
+                self, prediction)
 
             if len(new_tokens) == 0 and vad:
                 continue
@@ -197,7 +204,8 @@ class CrisperASRModule(retico_core.AbstractModule):
 
     def prepare_run(self):
         self._asr_thread_active = True
-        threading.Thread(target=self._asr_thread, daemon=True).start()  # Make thread daemon for cleaner shutdown
+        # Make thread daemon for cleaner shutdown
+        threading.Thread(target=self._asr_thread, daemon=True).start()
 
     def shutdown(self):
         self._asr_thread_active = False
